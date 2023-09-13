@@ -46,11 +46,16 @@ class Recipe(models.Model):
         through='RecipeIngredient',
         through_fields=('recipe', 'ingredient')
     )
+    image = models.ImageField(
+        blank=True,
+        null=True,
+        verbose_name='Изображение',
+        upload_to='recipes/'
+    )
 
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
-
 
 class Ingredient(models.Model):
     name = models.CharField(
@@ -80,3 +85,52 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveIntegerField(
         verbose_name='Количество'
     )
+
+
+class ShoppingCart(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь',
+        related_name='shopping_cart'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепты',
+        related_name='shopping_cart'
+    )
+
+    class Meta:
+        verbose_name = 'Рецепт в корзине'
+        verbose_name_plural = 'Рецепты в корзине'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_recipe'
+            )
+        ]
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Пользователь',
+        related_name='favorite'
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        verbose_name='Рецепты',
+        related_name='favorite'
+    )
+
+    class Meta:
+        verbose_name = 'Избранный рецепт'
+        verbose_name_plural = 'Избранные рецепты'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_favorite'
+            )
+        ]
