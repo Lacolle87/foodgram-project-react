@@ -1,6 +1,13 @@
 from rest_framework import serializers
-
-from recipes.models import Tag, Recipe, RecipeIngredient, Ingredient
+from drf_base64.fields import Base64ImageField
+from recipes.models import (
+    Tag,
+    Recipe,
+    RecipeIngredient,
+    Ingredient,
+    Favorite
+)
+from users.models import User
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -24,6 +31,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True)
     ingredients = RecipeIngredientSerializer(many=True,
                                              source='recipe_ingredients')
+    image = Base64ImageField()
 
     class Meta:
         model = Recipe
@@ -34,6 +42,12 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         source='ingredient',
         queryset=Ingredient.objects.all()
+    )
+    amount = serializers.IntegerField(
+        min_value=1,
+        error_messages={
+            'min_value': 'Должно быть позитивное число больше 0.'
+        }
     )
 
     class Meta:
@@ -59,10 +73,21 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 amount=ingredient_data['amount']
             ).save()
 
+            instance.save()
             return instance
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
+
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe',)

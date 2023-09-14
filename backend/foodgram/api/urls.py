@@ -11,7 +11,7 @@ router = routers.DefaultRouter()
 router.register('users', CustomUserViewSet)
 router.register('tags', TagViewSet)
 router.register('recipes', RecipeViewSet)
-router.register(r'ingredients', IngredientViewSet)
+router.register('ingredients', IngredientViewSet)
 
 urlpatterns = [
     path('auth/', include('djoser.urls.authtoken')),

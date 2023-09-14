@@ -1,4 +1,4 @@
-from django.shortcuts import HttpResponse
+from rest_framework import filters
 from djoser.views import UserViewSet
 from rest_framework.viewsets import ModelViewSet
 
@@ -17,6 +17,7 @@ class CustomUserViewSet(UserViewSet):
 class TagViewSet(ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    filter_fields = ('name', 'color')
 
     def get_queryset(self):
         recipes = Recipe.objects.prefetch_related(
@@ -35,6 +36,9 @@ class TagViewSet(ModelViewSet):
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name', 'description', 'tags__name')
+    pagination_class = 'rest_framework.pagination.PageNumberPagination'
 
 
 class IngredientViewSet(ModelViewSet):
