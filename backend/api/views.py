@@ -1,6 +1,7 @@
 from rest_framework import filters
 from djoser.views import UserViewSet
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.pagination import PageNumberPagination
 
 from recipes.models import Tag, Recipe, Ingredient
 from api.serializer import (
@@ -34,11 +35,11 @@ class TagViewSet(ModelViewSet):
 
 
 class RecipeViewSet(ModelViewSet):
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.all().order_by('id')
     serializer_class = RecipeSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name', 'description', 'tags__name')
-    pagination_class = 'rest_framework.pagination.PageNumberPagination'
+    pagination_class = PageNumberPagination
 
 
 class IngredientViewSet(ModelViewSet):

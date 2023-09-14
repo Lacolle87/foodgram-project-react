@@ -57,6 +57,7 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
+
 class Ingredient(models.Model):
     name = models.CharField(
         verbose_name='Название',
@@ -110,6 +111,7 @@ class ShoppingCart(models.Model):
                 name='unique_recipe'
             )
         ]
+
 
 class Favorite(models.Model):
     user = models.ForeignKey(
