@@ -6,7 +6,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "foodgram.settings")
 
 django.setup()
 
-from recipes.models import Ingredient
+from backend.recipes import Ingredient
 
 
 def load_ingredients_from_csv(file_path):

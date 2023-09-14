@@ -8,13 +8,6 @@ services:
     volumes:
       - ../frontend/:/app/result_build/
 
-  backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-
   nginx:
     image: nginx:1.19.3
     ports:
@@ -23,3 +16,11 @@ services:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../backend/Dockerfile
+    command: gunicorn foodgram.wsgi:application --bind 0.0.0.0:8000
+    ports:
+      - "8000:8000"
