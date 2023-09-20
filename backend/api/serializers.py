@@ -105,11 +105,12 @@ class RecipeSerializer(serializers.ModelSerializer):
 class RecipeCreateSerializer(serializers.ModelSerializer):
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=Tag.objects.all())
+        queryset=Tag.objects.all(),
+    )
     ingredients = IngredientEditSerializer(many=True)
     author = UserCustomSerializer(
         read_only=True,
-        default=serializers.CurrentUserDefault()
+        default=serializers.CurrentUserDefault(),
     )
     image = Base64ImageField()
 
@@ -127,7 +128,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             RecipeIngredient(
                 recipe=recipe,
                 ingredient_id=ingredient.get('id'),
-                amount=ingredient.get('amount')
+                amount=ingredient.get('amount'),
             ) for ingredient in ingredients])
 
     def validate_ingredient(self, data):
@@ -160,19 +161,20 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         new_recipe = Recipe.objects.create(
             author=author,
             cooking_time=cooking_time,
-            **validated_data
+            **validated_data,
         )
         new_recipe.tags.set(tags)
         self.add_ingredients(new_recipe, ingredients)
         return new_recipe
 
     def update(self, recipe, validated_data):
-        if validated_data['ingredients']:
+        if 'ingredients' in validated_data:
             ingredients = validated_data.pop('ingredients')
             recipe.ingredient_recipes.all().delete()
             self.add_ingredients(recipe, ingredients)
-        tags = validated_data.pop('tags')
-        recipe.tags.set(tags)
+        if 'tags' in validated_data:
+            tags = validated_data.pop('tags')
+            recipe.tags.set(tags)
         return super().update(recipe, validated_data)
 
 

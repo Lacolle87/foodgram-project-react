@@ -132,3 +132,4 @@ dmypy.json
 .idea
 /backend/back_media/
 /backend/static/
+/diploma.postman_collection.json
