@@ -1,4 +1,3 @@
-from djoser.views import UserViewSet
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -13,17 +12,21 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
-from api.serializer import (
-    FavoriteSerializer, IngredientSerializer, RecipeCreateSerializer,
-    RecipeListSerializer, TagSerializer
+from api.serializers import (
+    FavoriteSerializer,
+    IngredientSerializer,
+    RecipeCreateSerializer,
+    RecipeListSerializer,
+    TagSerializer
 )
 from recipes.models import (
-    Favorite, Ingredient, RecipeIngredient, Recipe, ShoppingCart, Tag,
+    Favorite,
+    Ingredient,
+    RecipeIngredient,
+    Recipe,
+    ShoppingCart,
+    Tag
 )
-
-
-class CustomUserViewSet(UserViewSet):
-    pass
 
 
 class TagViewSet(ReadOnlyModelViewSet):
@@ -69,7 +72,8 @@ class RecipeViewSet(ModelViewSet):
             return queryset.filter(pk__in=cart_recipes_ids)
         return queryset
 
-    def post_list(self, model, user, pk):
+    @staticmethod
+    def post_list(model, user, pk):
         if model.objects.filter(user=user, recipe__id=pk).exists():
             return Response(
                 {'errors': f'Рецепт уже добавлен в {model.__name__}'},
@@ -81,7 +85,8 @@ class RecipeViewSet(ModelViewSet):
         return Response(serializer.data,
                         status=status.HTTP_201_CREATED)
 
-    def delete_list(self, model, user, pk):
+    @staticmethod
+    def delete_list(model, user, pk):
         obj = model.objects.filter(user=user, recipe__id=pk)
         if obj.exists():
             obj.delete()

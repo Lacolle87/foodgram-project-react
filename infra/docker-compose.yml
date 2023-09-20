@@ -1,5 +1,35 @@
-version: '3.3'
+version: '3'
+
+volumes:
+  pg_data:
+  static:
+  media:
+  logs:
+
 services:
+  db:
+    image: postgres:13.0-alpine
+    env_file: .env
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "django", "-d", "django"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../backend/Dockerfile
+    env_file: .env
+    volumes:
+      - static:/app/static/
+      - media:/app/media/
+      - logs:/app/logs/
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build:
@@ -7,20 +37,19 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
+    depends_on:
+      - backend
 
   nginx:
-    image: nginx:1.19.3
+    image: nginx:1.25.2
     ports:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
-
-  backend:
-    build:
-      context: ../backend
-      dockerfile: ../backend/Dockerfile
-    command: gunicorn foodgram.wsgi:application --bind 0.0.0.0:8000
-    ports:
-      - "8000:8000"
+      - static:/var/html/static/
+      - media:/var/html/media/
+    depends_on:
+      - backend
+      - frontend

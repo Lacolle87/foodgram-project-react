@@ -1,40 +1,48 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from django.core.exceptions import ValidationError
+
+class BaseModel(models.Model):
+    objects = models.Manager()
+
+    class Meta:
+        abstract = True
 
 
 class User(AbstractUser):
-    email = models.EmailField(max_length=254,
-                              unique=True,
-                              verbose_name='Адрес почты',
-                              )
-    username = models.CharField(max_length=150,
-                                unique=True,
-                                verbose_name='Имя пользователя')
-    first_name = models.CharField(max_length=150,
-                                  verbose_name='Имя')
-    last_name = models.CharField(max_length=150,
-                                 verbose_name='Фамилия')
+    email = models.EmailField(
+        max_length=254,
+        unique=True,
+        verbose_name='Адрес почты'
+    )
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        verbose_name='Имя пользователя'
+    )
+    first_name = models.CharField(
+        max_length=150,
+        verbose_name='Имя'
+    )
+    last_name = models.CharField(
+        max_length=150,
+        verbose_name='Фамилия'
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
 
-    def __str__(self):
-        return self.username
-
     class Meta:
+        ordering = ('id',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('email', 'username'),
-                name='unique_user'
-            )
-        ]
 
 
-class AuthorSubscription(models.Model):
+    def __str__(self) -> str:
+        return self.get_full_name()
+
+
+class Subscription(BaseModel):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -48,19 +56,16 @@ class AuthorSubscription(models.Model):
         verbose_name='Автор'
     )
 
-    def __str__(self):
-        return f'Автор: {self.author}, подписчик: {self.user}'
-
-
-    def clean(self):
-        if self.user == self.author:
-            raise ValidationError("Невозможно подписаться на самого себя")
-
     class Meta:
-        verbose_name = 'Подписка на автора'
-        verbose_name_plural = 'Подписки на авторов'
+        ordering = ('id',)
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = [
             models.UniqueConstraint(
-                fields=['user', 'author'],
-                name='unique_follower')
+                fields=('user', 'author'),
+                name='unique_user_author'
+            )
         ]
+
+    def __str__(self):
+        return f'{self.user} - {self.author}'

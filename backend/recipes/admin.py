@@ -1,6 +1,7 @@
+from django import forms
 from django.contrib import admin
 
-from recipes.models import (
+from .models import (
     Tag,
     Recipe,
     Ingredient,
@@ -10,30 +11,53 @@ from recipes.models import (
 )
 
 
-class RecipeIngredientInLine(admin.TabularInline):
-    model = RecipeIngredient
-    extra = 1
-
-
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ('name', 'color', 'slug')
+    list_filter = ('recipes',)
+    prepopulated_fields = {'slug': ('name',)}
+
+
+class IngredientsFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+
+        if any(self.errors):
+            return
+
+        ingredient_count = 0
+        for form in self.forms:
+            if form.cleaned_data and not form.cleaned_data.get('DELETE',
+                                                               False):
+                ingredient_count += 1
+            if ingredient_count < 1:
+                raise forms.ValidationError(
+                    'Добавьте хотя бы один ингредиент'
+                )
+
+
+class IngredientRecipeInline(admin.TabularInline):
+    model = RecipeIngredient
+    formset = IngredientsFormSet
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    inlines = (RecipeIngredientInLine,)
+    list_filter = ('author', 'tags')
+    list_display = ('name', 'author', 'is_favorited',
+                    'pub_date')
+    search_fields = ('author', 'name', 'tags')
+    inlines = [IngredientRecipeInline]
+
+    def is_favorited(self, obj):
+        return obj.favorite.count()
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ('name', 'measurement_unit')
     search_fields = ('name',)
-
-
-@admin.register(RecipeIngredient)
-class RecipeIngredientAdmin(admin.ModelAdmin):
-    list_display = ('recipe', 'ingredient', 'amount')
+    list_filter = ('measurement_unit',)
 
 
 @admin.register(Favorite)
