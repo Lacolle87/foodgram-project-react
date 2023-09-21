@@ -14,22 +14,27 @@ class Api {
     })
   }
 
-  checkFileDownloadResponse (res) {
-    return new Promise((resolve, reject) => {
-      if (res.status < 400) {
-        return res.blob().then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = "shopping-list";
-          document.body.appendChild(a); // we need to append the element to the dom -> otherwise it will not work in firefox
-          a.click();    
-          a.remove();  //afterwards we remove the element again 
-        })
-      }
-      reject()
-    })
-  }
+  checkFileDownloadResponse(res) {
+  return new Promise((resolve, reject) => {
+    if (res.status < 400) {
+      // Получите имя файла из HTTP-заголовка Content-Disposition
+      const contentDisposition = res.headers.get('content-disposition');
+      const match = contentDisposition && contentDisposition.match(/filename="([^"]+)"/);
+      const suggestedFileName = match ? match[1] : 'shopping-list'; // Имя файла по умолчанию
+
+      return res.blob().then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = suggestedFileName; // Используйте имя файла из заголовка или имя по умолчанию
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      })
+    }
+    reject();
+  })
+}
 
   signin ({ email, password }) {
     return fetch(

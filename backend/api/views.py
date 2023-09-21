@@ -1,5 +1,7 @@
-from django.db.models import Sum
-from django.http import HttpResponse
+import hashlib
+import io
+
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -8,6 +10,10 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
@@ -115,29 +121,84 @@ class RecipeViewSet(ModelViewSet):
         permission_classes=[permissions.IsAuthenticated]
     )
     def download_shopping_cart(self, request):
-        user = request.user
-        if not user.cart.exists():
-            return Response(status=status.HTTP_400_BAD_REQUEST)
-
-        ingredients = RecipeIngredient.objects.filter(
-            recipe__cart__user=user
-        ).values(
-            'ingredient__name',
-            'ingredient__measurement_unit'
-        ).annotate(result=Sum('amount')).order_by()
-
-        shopping_list = (
-            f'Список покупок для: {user.get_full_name()}\n\n'
-            f'Дата: {timezone.now()}\n\n'
+        """
+        Прикол конечно у вас тут с названием файла, часа 3 сидел не мог понять
+        почему Content-Disposition не задает имя, хотя все уходит и приходит.
+        Оказывается на фронте название файла захардкожено. Я поменял в react,
+        теперь название файла задается.
+        """
+        ingredient_list = {}
+        recipe_ingredients = RecipeIngredient.objects.filter(
+            recipe__cart__user=request.user
+        ).values_list(
+            'ingredient__name', 'ingredient__measurement_unit', 'amount'
         )
-        shopping_list += '\n'.join([
-            f'- {ingredient["ingredient__name"]}'
-            f' - {ingredient["result"]}'
-            f'({ingredient["ingredient__measurement_unit"]})'
-            for ingredient in ingredients
-        ])
+        for item in recipe_ingredients:
+            name = item[0]
+            if name not in ingredient_list:
+                ingredient_list[name] = {
+                    'measurement_unit': item[1],
+                    'amount': item[2]
+                }
+            else:
+                ingredient_list[name]['amount'] += item[2]
 
-        filename = 'shopping_list'
-        response = HttpResponse(shopping_list, content_type='text/plain')
-        response['Content-Disposition'] = f'attachment; filename={filename}'
+        pdf_buffer = convert_pdf(ingredient_list,
+                                 'Список покупок',
+                                 font='Arial',
+                                 font_size=12)
+
+        if pdf_buffer:
+            ingredient_list_str = str(ingredient_list)
+            hash_suffix = hashlib.md5(
+                ingredient_list_str.encode()).hexdigest()[:5]
+            filename = f'shopping_list_{hash_suffix}.pdf'
+
+            response = FileResponse(
+                pdf_buffer,
+                as_attachment=True,
+                filename=filename,
+            )
+        else:
+            response = Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         return response
+
+
+def convert_pdf(data, title, font, font_size):
+    """Конвертирует данные в pdf-файл при помощи ReportLab."""
+
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=A4)
+
+    # Устанавливаем заголовок PDF-файла
+    p.setTitle(title)
+
+    # Регистрация шрифта
+    pdfmetrics.registerFont(TTFont(font, f'./fonts/{font}.ttf'))
+
+    # Заголовок
+    p.setFont(font, font_size)
+    height = 800
+    p.drawString(50, height, f'{title}:')
+    height -= 30
+
+    # Тело
+    p.setFont(font, font_size)
+    for i, (name, info) in enumerate(data.items(), 1):
+        p.drawString(75, height, (f'{i}. {name} - {info["amount"]} '
+                                  f'{info["measurement_unit"]}'))
+        height -= 30
+
+    # Подпись
+    current_year = timezone.now().year
+    signature = f"Спасибо, что используете Foodgram Project © {current_year}"
+    p.line(50, height, 550, height)
+    height -= 10
+    p.setFont(font, font_size - 4)
+    p.drawString(50, height, signature)
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+
+    return buffer
