@@ -56,9 +56,6 @@ class IngredientViewSet(ModelViewSet):
     def update_put(self, request, *args, **kwargs):
         raise MethodNotAllowed("PUT")
 
-    def update_patch(self, request, *args, **kwargs):
-        raise MethodNotAllowed("PATCH")
-
     def partial_update(self, request, *args, **kwargs):
         raise MethodNotAllowed("PATCH")
 
