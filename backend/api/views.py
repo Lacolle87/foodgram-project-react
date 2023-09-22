@@ -53,7 +53,7 @@ class IngredientViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         raise MethodNotAllowed("POST")
 
-    def update_put(self, request, *args, **kwargs):
+    def update(self, request, *args, **kwargs):
         raise MethodNotAllowed("PUT")
 
     def partial_update(self, request, *args, **kwargs):
