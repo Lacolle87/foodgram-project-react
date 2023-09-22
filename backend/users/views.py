@@ -18,14 +18,8 @@ class CustomUserViewSet(UserViewSet):
     serializer_class = UserCustomSerializer
     queryset = User.objects.all()
     pagination_class = CustomPagination
-    permission_classes = [IsAuthenticated]
 
-    @action(
-        detail=False,
-        methods=['GET'],
-        serializer_class=SubscribeSerializer,
-        permission_classes=[IsAuthenticated]
-    )
+    @action(detail=False)
     def subscriptions(self, request):
         user = request.user
         queryset = User.objects.filter(following__user=user)

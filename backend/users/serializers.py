@@ -17,7 +17,7 @@ class SubscribeRecipeSerializer(serializers.ModelSerializer):
 
 class UserCustomCreateSerializer(UserCreateSerializer):
     username = serializers.RegexField(
-        regex=r"^[\w.@+-]+\Z", required=False, max_length=150)
+        regex=r"^[\w.@+-]+\Z", required=True, max_length=150)
 
     class Meta:
         model = User

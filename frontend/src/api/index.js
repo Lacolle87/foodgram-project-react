@@ -26,7 +26,7 @@ class Api {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = suggestedFileName; // Используйте имя файла из заголовка или имя по умолчанию
+        a.download = suggestedFileName;
         document.body.appendChild(a);
         a.click();
         a.remove();

@@ -29,7 +29,6 @@ class Tag(BaseModel):
         verbose_name='Слаг',
         max_length=200,
         unique=True,
-        db_index=True
     )
 
     class Meta:

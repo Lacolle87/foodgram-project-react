@@ -10,6 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
+from rest_framework.exceptions import MethodNotAllowed
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -49,12 +50,37 @@ class IngredientViewSet(ModelViewSet):
     filter_backends = (IngredientFilter,)
     search_fields = ('^name',)
 
+    def create(self, request, *args, **kwargs):
+        raise MethodNotAllowed("POST")
+
+    def update_put(self, request, *args, **kwargs):
+        raise MethodNotAllowed("PUT")
+
+    def update_patch(self, request, *args, **kwargs):
+        raise MethodNotAllowed("PATCH")
+
+    def partial_update(self, request, *args, **kwargs):
+        raise MethodNotAllowed("PATCH")
+
+    def destroy(self, request, *args, **kwargs):
+        raise MethodNotAllowed("DELETE")
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        if (
+            response.status_code != status.HTTP_405_METHOD_NOT_ALLOWED
+            and request.method not in ["GET"]
+        ):
+            response = Response(
+                {"detail": "Method Not Allowed."},
+                status=status.HTTP_405_METHOD_NOT_ALLOWED,
+            )
+        return super().finalize_response(request, response, *args, **kwargs)
+
 
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     filter_backends = (DjangoFilterBackend,)
     filter_class = RecipeFilter
-    filterset_fields = ('tags', 'author',)
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = CustomPagination
 
@@ -66,10 +92,13 @@ class RecipeViewSet(ModelViewSet):
     def get_queryset(self):
         queryset = Recipe.objects.all()
         author = self.request.user
+        tags = self.request.query_params.getlist('tags', [])
+        if tags:
+            queryset = queryset.filter(tags__slug__in=tags).distinct()
+
         if self.request.GET.get('is_favorited'):
             favorite_recipes_ids = Favorite.objects.filter(
                 user=author).values('recipe_id')
-
             return queryset.filter(pk__in=favorite_recipes_ids)
 
         if self.request.GET.get('is_in_shopping_cart'):
