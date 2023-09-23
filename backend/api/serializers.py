@@ -86,7 +86,18 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = '__all__'
+        fields = (
+            'id',
+            'name',
+            'author',
+            'text',
+            'ingredients',
+            'tags',
+            'image',
+            'cooking_time',
+            'is_favorited',
+            'is_in_shopping_cart',
+        )
 
     def get_is_favorited(self, obj):
         request = self.context.get('request')
@@ -170,7 +181,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def update(self, recipe, validated_data):
         if 'ingredients' in validated_data:
             ingredients = validated_data.pop('ingredients')
-            recipe.ingredient_recipes.all().delete()
+            recipe.recipe_ingredients.all().delete()
             self.add_ingredients(recipe, ingredients)
         if 'tags' in validated_data:
             tags = validated_data.pop('tags')

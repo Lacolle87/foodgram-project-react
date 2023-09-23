@@ -27,12 +27,11 @@ class UserCustomCreateSerializer(UserCreateSerializer):
 
 class UserCustomSerializer(UserSerializer):
     is_subscribed = serializers.SerializerMethodField()
-    recipes = SubscribeRecipeSerializer(many=True)
 
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name',
-                  'last_name', 'is_subscribed', 'recipes',)
+                  'last_name', 'is_subscribed',)
         lookup_field = 'id'
 
     def get_is_subscribed(self, obj):
@@ -46,30 +45,13 @@ class UserCustomSerializer(UserSerializer):
 
 class SubscribeSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.ReadOnlyField(default=True)
-    recipes = serializers.SerializerMethodField()
+    recipes = SubscribeRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('email', 'id', 'username', 'first_name', 'last_name',
                   'is_subscribed', 'recipes', 'recipes_count',)
-
-    def get_is_subscribed(self, obj):
-        user = self.context['request'].user
-        if not user:
-            return False
-        return Subscription.objects.filter(user=user, author=obj).exists()
-
-    def get_recipes(self, obj):
-        request = self.context.get('request')
-        limit_recipes = request.query_params.get('recipes_limit')
-        if limit_recipes is not None:
-            recipes = obj.recipes.all()[:(int(limit_recipes))]
-        else:
-            recipes = obj.recipes.all()
-        context = {'request': request}
-        return SubscribeRecipeSerializer(recipes, many=True,
-                                         context=context).data
 
     def get_recipes_count(self, obj):
         return Recipe.objects.filter(author=obj).count()
