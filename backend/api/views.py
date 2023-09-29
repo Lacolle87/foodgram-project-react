@@ -131,36 +131,18 @@ class RecipeViewSet(ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-
     @action(methods=['POST', 'DELETE'], detail=True,
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk=None):
-        recipe = self.get_object()
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+        except Recipe.DoesNotExist:
+            return Response({'error': 'Recipe not found'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == 'POST':
-            if Favorite.objects.filter(user=request.user,
-                                       recipe=recipe).exists():
-                return Response(
-                    {'detail': 'This recipe is already in your favorites.'},
-                    status=status.HTTP_400_BAD_REQUEST)
-            favorite = Favorite.objects.create(user=request.user,
-                                               recipe=recipe)
-            favorite.save()
-            return Response({'detail': 'Recipe added to favorites.'},
-                            status=status.HTTP_201_CREATED)
-
-        elif request.method == 'DELETE':
-            try:
-                favorite = Favorite.objects.get(user=request.user,
-                                                recipe=recipe)
-            except Favorite.DoesNotExist:
-                return Response(
-                    {'detail': 'This recipe is not in your favorites.'},
-                    status=status.HTTP_400_BAD_REQUEST)
-            favorite.delete()
-            return Response({'detail': 'Recipe removed from favorites.'},
-                            status=status.HTTP_204_NO_CONTENT)
-
+            return self.post_list(Favorite, request.user, pk)
+        return self.delete_list(Favorite, request.user, pk)
 
     @action(methods=['POST', 'DELETE'], detail=True,
             permission_classes=(IsAuthenticated,))
