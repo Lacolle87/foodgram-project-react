@@ -120,6 +120,10 @@ REST_FRAMEWORK = {
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
+    'PERMISSIONS': {
+        'user': ['rest_framework.permissions.IsAuthenticatedOrReadOnly'],
+        'user_list':['rest_framework.permissions.IsAuthenticatedOrReadOnly']
+    }
 }
 
 CSV_FILES_DIR = os.path.join(BASE_DIR, 'data')

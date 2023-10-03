@@ -67,8 +67,8 @@ class IngredientViewSet(ModelViewSet):
 
     def finalize_response(self, request, response, *args, **kwargs):
         if (
-            response.status_code != status.HTTP_405_METHOD_NOT_ALLOWED
-            and request.method not in ["GET"]
+                response.status_code != status.HTTP_405_METHOD_NOT_ALLOWED
+                and request.method not in ["GET"]
         ):
             response = Response(
                 {"detail": "Method Not Allowed."},
@@ -96,16 +96,55 @@ class RecipeViewSet(ModelViewSet):
         if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
 
-        if self.request.GET.get('is_favorited'):
+        if self.request.GET.get('is_favorited') == 'true':
             favorite_recipes_ids = Favorite.objects.filter(
                 user=author).values('recipe_id')
             return queryset.filter(pk__in=favorite_recipes_ids)
 
-        if self.request.GET.get('is_in_shopping_cart'):
+        if self.request.GET.get('is_in_shopping_cart') == 'true':
             cart_recipes_ids = ShoppingCart.objects.filter(
                 user=author).values('recipe_id')
             return queryset.filter(pk__in=cart_recipes_ids)
+
         return queryset
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        if instance.author != request.user:
+            return Response(
+                {
+                    'detail': 'Запрос на обновление чужого рецепта запрещен.'
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = self.get_serializer(
+            instance,
+                  data=request.data,
+                  partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        if ('ingredients' not in
+                request.data
+                or not request.data['ingredients']):
+            return Response(
+                {
+                    'detail': 'Поле "ingredients" обязательно для рецепта.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if 'tags' not in request.data or not request.data['tags']:
+            return Response(
+                {
+                    'detail': 'Поле "tags" обязательно для обновления рецепта.'
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer.save()
+        return Response(serializer.data)
 
     @staticmethod
     def post_list(model, user, pk):
@@ -134,12 +173,8 @@ class RecipeViewSet(ModelViewSet):
     @action(methods=['POST', 'DELETE'], detail=True,
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk=None):
-        try:
-            recipe = Recipe.objects.get(pk=pk)
-        except Recipe.DoesNotExist:
-            return Response({'error': 'Recipe not found'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
+        get_object_or_404(Recipe,
+                          pk=pk)
         if request.method == 'POST':
             return self.post_list(Favorite, request.user, pk)
         return self.delete_list(Favorite, request.user, pk)
@@ -147,6 +182,8 @@ class RecipeViewSet(ModelViewSet):
     @action(methods=['POST', 'DELETE'], detail=True,
             permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk=None):
+        get_object_or_404(Recipe,
+                          pk=pk)
         if request.method == 'POST':
             return self.post_list(ShoppingCart, request.user, pk)
         return self.delete_list(ShoppingCart, request.user, pk)

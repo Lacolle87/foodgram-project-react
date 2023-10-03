@@ -7,15 +7,23 @@ from rest_framework.response import Response
 
 from api.pagination import CustomPagination
 from users.models import Subscription
-from users.serializers import SubscribeSerializer, UserCustomSerializer
+from users.serializers import (
+    SubscribeSerializer,
+    UserCustomSerializer,
+    UserCustomCreateSerializer,
+    PasswordSerializer)
 
 User = get_user_model()
 
 
 class CustomUserViewSet(UserViewSet):
-    serializer_class = UserCustomSerializer
     queryset = User.objects.all()
     pagination_class = CustomPagination
+
+    def get_serializer_class(self):
+        if self.request.method.lower() == 'post':
+            return UserCustomCreateSerializer
+        return UserCustomSerializer
 
     @action(detail=False, serializer_class=SubscribeSerializer)
     def subscriptions(self, request):
@@ -60,3 +68,24 @@ class CustomUserViewSet(UserViewSet):
             author=author)
         subscription.delete()
         return Response('Вы отписались', status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['POST'])
+    def set_password(self, request):
+        if request.user.is_anonymous:
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+
+        serializer = PasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            current_password = serializer.validated_data.get(
+                "current_password")
+            if not request.user.check_password(current_password):
+                return Response({"current_password": ["Wrong password."]},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            new_password = serializer.validated_data.get("new_password")
+            request.user.set_password(new_password)
+            request.user.save()
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
