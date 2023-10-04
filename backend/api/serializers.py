@@ -1,6 +1,6 @@
 from drf_base64.fields import Base64ImageField
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 
 from recipes.models import (
     Tag,
@@ -161,7 +161,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return ingredients
 
     def validate_cooking_time(self, cooking_time):
-        if int(cooking_time) <= 1:
+        if int(cooking_time) < 1:
             raise ValidationError('Время приготовления должно быть больше 1.')
         return cooking_time
 
@@ -190,6 +190,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return new_recipe
 
     def update(self, instance, validated_data):
+        if self.context['request'].user != instance.author:
+            raise PermissionDenied(
+                'Запрос на обновление чужого рецепта запрещен.')
+
         if 'ingredients' in validated_data:
             ingredients = validated_data.pop('ingredients')
             instance.recipe_ingredients.all().delete()
@@ -200,6 +204,13 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             instance.tags.set(tags)
 
         return super().update(instance, validated_data)
+
+    def is_valid(self, raise_exception=False):
+        if 'tags' not in self.initial_data or 'ingredients' not in self.initial_data:
+            raise serializers.ValidationError(
+                {'tags': ['Это поле обязательно.'],
+                 'ingredients': ['Это поле обязательно.']})
+        return super().is_valid(raise_exception=raise_exception)
 
 
 class RecipeListSerializer(serializers.ModelSerializer):

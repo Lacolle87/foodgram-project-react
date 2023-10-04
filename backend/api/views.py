@@ -106,6 +106,10 @@ class RecipeViewSet(ModelViewSet):
                 user=author).values('recipe_id')
             return queryset.filter(pk__in=cart_recipes_ids)
 
+        author_id = self.request.query_params.get('author')
+        if author_id:
+            queryset = queryset.filter(author_id=author_id)
+
         return queryset
 
     @staticmethod
