@@ -108,44 +108,6 @@ class RecipeViewSet(ModelViewSet):
 
         return queryset
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
-
-        if instance.author != request.user:
-            return Response(
-                {
-                    'detail': 'Запрос на обновление чужого рецепта запрещен.'
-                },
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        serializer = self.get_serializer(
-            instance,
-                  data=request.data,
-                  partial=True)
-        serializer.is_valid(raise_exception=True)
-
-        if ('ingredients' not in
-                request.data
-                or not request.data['ingredients']):
-            return Response(
-                {
-                    'detail': 'Поле "ingredients" обязательно для рецепта.'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if 'tags' not in request.data or not request.data['tags']:
-            return Response(
-                {
-                    'detail': 'Поле "tags" обязательно для обновления рецепта.'
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer.save()
-        return Response(serializer.data)
-
     @staticmethod
     def post_list(model, user, pk):
         if model.objects.filter(user=user, recipe__id=pk).exists():

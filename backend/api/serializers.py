@@ -142,27 +142,38 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 amount=ingredient.get('amount'),
             ) for ingredient in ingredients])
 
-    def validate_ingredient(self, data):
-        ingredients = data['ingredients']
+    def validate_ingredients(self, ingredients):
         if not ingredients:
-            raise ValidationError(
-                'Необходим хотя бы 1 ингредиент.')
-        unique_ingredients = []
-        for ingredient in ingredients:
-            ingredient_id = ingredient['id']
-            if ingredient_id not in unique_ingredients:
-                unique_ingredients.append(ingredient_id)
-            else:
-                raise ValidationError(
-                    'Такой ингредиент уже есть.')
-        return data
+            raise ValidationError('Необходим хотя бы 1 ингредиент.')
 
-    def validate_time(self, data):
-        cooking_time = data['cooking_time']
+        unique_ingredient_ids = set()
+        for ingredient in ingredients:
+            ingredient_id = ingredient.get('id')
+            if ingredient_id is None:
+                raise ValidationError('Укажите ID существующего ингредиента.')
+            if ingredient_id in unique_ingredient_ids:
+                raise ValidationError('Такой ингредиент уже есть.')
+            unique_ingredient_ids.add(ingredient_id)
+
+            if not Ingredient.objects.filter(id=ingredient_id).exists():
+                raise ValidationError(f'Ингредиент с ID {ingredient_id} не существует.')
+
+        return ingredients
+
+    def validate_cooking_time(self, cooking_time):
         if int(cooking_time) <= 1:
-            raise ValidationError(
-                'Время приготовления должно быть больше 1.')
-        return data
+            raise ValidationError('Время приготовления должно быть больше 1.')
+        return cooking_time
+
+    def validate_tags(self, tags):
+        if not tags:
+            raise ValidationError('Необходим хотя бы 1 тег.')
+
+        tag_ids = [tag.id for tag in tags]
+        if len(tag_ids) != len(set(tag_ids)):
+            raise ValidationError('Повторение тегов запрещено.')
+
+        return tags
 
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
@@ -178,15 +189,17 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         self.add_ingredients(new_recipe, ingredients)
         return new_recipe
 
-    def update(self, recipe, validated_data):
+    def update(self, instance, validated_data):
         if 'ingredients' in validated_data:
             ingredients = validated_data.pop('ingredients')
-            recipe.recipe_ingredients.all().delete()
-            self.add_ingredients(recipe, ingredients)
+            instance.recipe_ingredients.all().delete()
+            self.add_ingredients(instance, ingredients)
+
         if 'tags' in validated_data:
             tags = validated_data.pop('tags')
-            recipe.tags.set(tags)
-        return super().update(recipe, validated_data)
+            instance.tags.set(tags)
+
+        return super().update(instance, validated_data)
 
 
 class RecipeListSerializer(serializers.ModelSerializer):
