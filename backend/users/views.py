@@ -31,7 +31,10 @@ class CustomUserViewSet(UserViewSet):
             user = request.user
             queryset = User.objects.filter(following__user=user)
             paginated_queryset = self.paginate_queryset(queryset)
-            serializer = self.get_serializer(paginated_queryset, many=True)
+            serializer = self.get_serializer(
+                paginated_queryset,
+                many=True
+            )
             return self.get_paginated_response(serializer.data)
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
@@ -51,14 +54,22 @@ class CustomUserViewSet(UserViewSet):
                     return Response(
                         {'errors': 'Нельзя подписаться на себя.'},
                         status=status.HTTP_400_BAD_REQUEST)
-                if Subscription.objects.filter(user=user, author=author).exists():
+                if Subscription.objects.filter(
+                        user=user,
+                        author=author
+                ).exists():
                     return Response(
                         {'errors': 'Вы уже подписаны.'},
                         status=status.HTTP_400_BAD_REQUEST)
                 Subscription.objects.create(user=user, author=author)
                 serializer = self.get_serializer(author)
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            if not Subscription.objects.filter(user=user, author=author).exists():
+                return Response(
+                    serializer.data, status=status.HTTP_201_CREATED
+                )
+            if not Subscription.objects.filter(
+                    user=user,
+                    author=author
+            ).exists():
                 if not User.objects.filter(id=id).exists():
                     return Response(
                         {'errors': 'Пользователь не существует.'},
@@ -71,7 +82,10 @@ class CustomUserViewSet(UserViewSet):
                 user=user,
                 author=author)
             subscription.delete()
-            return Response('Вы отписались', status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                'Вы отписались',
+                status=status.HTTP_204_NO_CONTENT
+            )
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
 
@@ -83,8 +97,10 @@ class CustomUserViewSet(UserViewSet):
                 current_password = serializer.validated_data.get(
                     "current_password")
                 if not request.user.check_password(current_password):
-                    return Response({"current_password": ["Wrong password."]},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                    return Response(
+                        {"current_password": ["Wrong password."]},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
 
                 new_password = serializer.validated_data.get("new_password")
                 request.user.set_password(new_password)
@@ -92,6 +108,8 @@ class CustomUserViewSet(UserViewSet):
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
 
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors,
+                            status=status.HTTP_400_BAD_REQUEST
+                            )
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)

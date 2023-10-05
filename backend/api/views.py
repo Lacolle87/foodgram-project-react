@@ -3,6 +3,7 @@ import io
 
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status
@@ -13,7 +14,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.exceptions import MethodNotAllowed, ValidationError
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -91,24 +92,27 @@ class RecipeViewSet(ModelViewSet):
 
     def get_queryset(self):
         queryset = Recipe.objects.all()
-        author = self.request.user
         tags = self.request.query_params.getlist('tags', [])
+
         if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
 
-        if self.request.GET.get('is_favorited'):
-            favorite_recipes_ids = Favorite.objects.filter(
-                user=author).values('recipe_id')
-            return queryset.filter(pk__in=favorite_recipes_ids)
+        if self.request.user.is_authenticated:
+            author = self.request.user
 
-        if self.request.GET.get('is_in_shopping_cart'):
-            cart_recipes_ids = ShoppingCart.objects.filter(
-                user=author).values('recipe_id')
-            return queryset.filter(pk__in=cart_recipes_ids)
+            if self.request.GET.get('is_favorited'):
+                favorite_recipes_ids = Favorite.objects.filter(
+                    user=author).values('recipe_id')
+                return queryset.filter(pk__in=favorite_recipes_ids)
 
-        author_id = self.request.query_params.get('author')
-        if author_id:
-            queryset = queryset.filter(author_id=author_id)
+            if self.request.GET.get('is_in_shopping_cart'):
+                cart_recipes_ids = ShoppingCart.objects.filter(
+                    user=author).values('recipe_id')
+                return queryset.filter(pk__in=cart_recipes_ids)
+
+            author_id = self.request.query_params.get('author')
+            if author_id:
+                queryset = queryset.filter(author_id=author_id)
 
         return queryset
 
@@ -136,11 +140,20 @@ class RecipeViewSet(ModelViewSet):
             status=status.HTTP_400_BAD_REQUEST
         )
 
+    def _get_recipe_or_400(self, pk):
+        try:
+            return Recipe.objects.get(pk=pk)
+        except ObjectDoesNotExist:
+            raise ValidationError(
+                {"error": "Рецепт не найден"},
+                code=status.HTTP_400_BAD_REQUEST
+            )
+
     @action(methods=['POST', 'DELETE'], detail=True,
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, pk=None):
-        get_object_or_404(Recipe,
-                          pk=pk)
+        self._get_recipe_or_400(pk)
+
         if request.method == 'POST':
             return self.post_list(Favorite, request.user, pk)
         return self.delete_list(Favorite, request.user, pk)
@@ -148,8 +161,8 @@ class RecipeViewSet(ModelViewSet):
     @action(methods=['POST', 'DELETE'], detail=True,
             permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, pk=None):
-        get_object_or_404(Recipe,
-                          pk=pk)
+        self._get_recipe_or_400(pk)
+
         if request.method == 'POST':
             return self.post_list(ShoppingCart, request.user, pk)
         return self.delete_list(ShoppingCart, request.user, pk)

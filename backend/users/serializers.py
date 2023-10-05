@@ -10,7 +10,6 @@ User = get_user_model()
 
 
 class SubscribeRecipeSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
@@ -43,7 +42,7 @@ class UserCustomSerializer(UserSerializer):
 
 
 class SubscribeSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.ReadOnlyField(default=True)
+    is_subscribed = serializers.SerializerMethodField()
     recipes = SubscribeRecipeSerializer(many=True, read_only=True)
     recipes_count = serializers.SerializerMethodField()
 
