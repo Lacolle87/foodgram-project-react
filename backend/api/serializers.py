@@ -156,7 +156,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             unique_ingredient_ids.add(ingredient_id)
 
             if not Ingredient.objects.filter(id=ingredient_id).exists():
-                raise ValidationError(f'Ингредиент с ID {ingredient_id} не существует.')
+                raise ValidationError(
+                    f'Ингредиент с ID {ingredient_id} не существует.'
+                )
 
         return ingredients
 
@@ -206,7 +208,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
     def is_valid(self, raise_exception=False):
-        if 'tags' not in self.initial_data or 'ingredients' not in self.initial_data:
+        if (
+                'tags' not in self.initial_data or
+                'ingredients' not in self.initial_data
+        ):
             raise serializers.ValidationError(
                 {'tags': ['Это поле обязательно.'],
                  'ingredients': ['Это поле обязательно.']})

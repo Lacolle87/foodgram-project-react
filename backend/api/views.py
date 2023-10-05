@@ -96,12 +96,12 @@ class RecipeViewSet(ModelViewSet):
         if tags:
             queryset = queryset.filter(tags__slug__in=tags).distinct()
 
-        if self.request.GET.get('is_favorited') == 'true':
+        if self.request.GET.get('is_favorited'):
             favorite_recipes_ids = Favorite.objects.filter(
                 user=author).values('recipe_id')
             return queryset.filter(pk__in=favorite_recipes_ids)
 
-        if self.request.GET.get('is_in_shopping_cart') == 'true':
+        if self.request.GET.get('is_in_shopping_cart'):
             cart_recipes_ids = ShoppingCart.objects.filter(
                 user=author).values('recipe_id')
             return queryset.filter(pk__in=cart_recipes_ids)
