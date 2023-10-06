@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import permissions, status
+from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.permissions import (
     IsAuthenticated,
@@ -55,24 +55,24 @@ class IngredientViewSet(ModelViewSet):
     search_fields = ('^name',)
 
     def create(self, request, *args, **kwargs):
-        raise MethodNotAllowed("POST")
+        raise MethodNotAllowed('POST')
 
     def update(self, request, *args, **kwargs):
-        raise MethodNotAllowed("PUT")
+        raise MethodNotAllowed('PUT')
 
     def partial_update(self, request, *args, **kwargs):
-        raise MethodNotAllowed("PATCH")
+        raise MethodNotAllowed('PATCH')
 
     def destroy(self, request, *args, **kwargs):
-        raise MethodNotAllowed("DELETE")
+        raise MethodNotAllowed('DELETE')
 
     def finalize_response(self, request, response, *args, **kwargs):
         if (
                 response.status_code != status.HTTP_405_METHOD_NOT_ALLOWED
-                and request.method not in ["GET"]
+                and request.method not in ['GET']
         ):
             response = Response(
-                {"detail": "Method Not Allowed."},
+                {'detail': 'Method Not Allowed.'},
                 status=status.HTTP_405_METHOD_NOT_ALLOWED,
             )
         return super().finalize_response(request, response, *args, **kwargs)
@@ -145,12 +145,14 @@ class RecipeViewSet(ModelViewSet):
             return Recipe.objects.get(pk=pk)
         except ObjectDoesNotExist:
             raise ValidationError(
-                {"error": "Рецепт не найден"},
+                {'error': 'Рецепт не найден'},
                 code=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(methods=['POST', 'DELETE'], detail=True,
-            permission_classes=(IsAuthenticated,))
+    @action(methods=['POST', 'DELETE'],
+            detail=True,
+            permission_classes=(IsAuthenticated,)
+            )
     def favorite(self, request, pk=None):
         self._get_recipe_or_400(pk)
 
@@ -158,8 +160,10 @@ class RecipeViewSet(ModelViewSet):
             return self.post_list(Favorite, request.user, pk)
         return self.delete_list(Favorite, request.user, pk)
 
-    @action(methods=['POST', 'DELETE'], detail=True,
-            permission_classes=(IsAuthenticated,))
+    @action(methods=['POST', 'DELETE'],
+            detail=True,
+            permission_classes=(IsAuthenticated,)
+            )
     def shopping_cart(self, request, pk=None):
         self._get_recipe_or_400(pk)
 
@@ -169,7 +173,7 @@ class RecipeViewSet(ModelViewSet):
 
     @action(
         detail=False,
-        permission_classes=[permissions.IsAuthenticated]
+        permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
         """
@@ -243,7 +247,7 @@ def convert_pdf(data, title, font, font_size):
 
     # Подпись
     current_year = timezone.now().year
-    signature = f"Спасибо, что используете Foodgram Project © {current_year}"
+    signature = f'Спасибо, что используете Foodgram Project © {current_year}'
     p.line(50, height, 550, height)
     height -= 10
     p.setFont(font, font_size - 4)
