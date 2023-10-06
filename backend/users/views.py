@@ -20,13 +20,29 @@ User = get_user_model()
 class CustomUserViewSet(UserViewSet):
     queryset = User.objects.all()
     pagination_class = CustomPagination
+    serializer_class = UserCustomSerializer
 
     @action(['GET'],
             detail=False,
-            permission_classes=(IsAuthenticated,)
-            )
+            permission_classes=(IsAuthenticated,))
     def me(self, request, *args, **kwargs):
-        return super().me(request, *args, **kwargs)
+        serializer_class = UserCustomSerializer
+        serializer = serializer_class(request.user,
+                                      context={'request': request})
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        serializer = UserCustomCreateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.save()
+            user.set_password(
+                serializer.validated_data['password'])
+            user.save()
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED,
+                            headers=headers)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, serializer_class=SubscribeSerializer)
     def subscriptions(self, request):
@@ -94,6 +110,7 @@ class CustomUserViewSet(UserViewSet):
 
     @action(detail=False, methods=['POST'])
     def set_password(self, request):
+
         if request.user.is_authenticated:
             serializer = PasswordSerializer(data=request.data)
             if serializer.is_valid():
@@ -101,7 +118,7 @@ class CustomUserViewSet(UserViewSet):
                     "current_password")
                 if not request.user.check_password(current_password):
                     return Response(
-                        {"current_password": ["Wrong password."]},
+                        {"current_password": ["Неверный пароль"]},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
