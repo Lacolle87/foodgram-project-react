@@ -12,7 +12,7 @@ from users.serializers import (
     SubscribeSerializer,
     UserCustomSerializer,
     UserCustomCreateSerializer,
-    PasswordSerializer)
+)
 
 User = get_user_model()
 
@@ -105,31 +105,5 @@ class CustomUserViewSet(UserViewSet):
                 'Вы отписались',
                 status=status.HTTP_204_NO_CONTENT
             )
-        else:
-            return Response(status=status.HTTP_401_UNAUTHORIZED)
-
-    @action(detail=False, methods=['POST'])
-    def set_password(self, request):
-
-        if request.user.is_authenticated:
-            serializer = PasswordSerializer(data=request.data)
-            if serializer.is_valid():
-                current_password = serializer.validated_data.get(
-                    "current_password")
-                if not request.user.check_password(current_password):
-                    return Response(
-                        {"current_password": ["Неверный пароль"]},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-
-                new_password = serializer.validated_data.get("new_password")
-                request.user.set_password(new_password)
-                request.user.save()
-
-                return Response(status=status.HTTP_204_NO_CONTENT)
-
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST
-                            )
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)
