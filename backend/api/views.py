@@ -1,10 +1,8 @@
 import hashlib
-import io
 
 from django.http import FileResponse
-from django.shortcuts import get_object_or_404
-from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
@@ -14,11 +12,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
-from rest_framework.exceptions import MethodNotAllowed, ValidationError
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
+from rest_framework.exceptions import MethodNotAllowed
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
@@ -30,6 +24,7 @@ from api.serializers import (
     RecipeListSerializer,
     TagSerializer
 )
+from api.utils import convert_pdf
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -116,6 +111,13 @@ class RecipeViewSet(ModelViewSet):
 
         return queryset
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.author != request.user:
+            raise PermissionDenied("У вас нет прав на удаление этого рецепта.")
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     @staticmethod
     def post_list(model, user, pk):
         if model.objects.filter(user=user, recipe__id=pk).exists():
@@ -123,30 +125,36 @@ class RecipeViewSet(ModelViewSet):
                 {'errors': f'Рецепт уже добавлен в {model.__name__}'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        recipe = get_object_or_404(Recipe, pk=pk)
+        try:
+            recipe = Recipe.objects.get(pk=pk)
+        except ObjectDoesNotExist:
+            return Response(
+                {'errors': 'Рецепт не существует'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         model.objects.create(user=user, recipe=recipe)
         serializer = RecipeListSerializer(recipe)
-        return Response(serializer.data,
-                        status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @staticmethod
     def delete_list(model, user, pk):
-        obj = model.objects.filter(user=user, recipe__id=pk)
+        try:
+            recipe = Recipe.objects.get(id=pk)
+        except ObjectDoesNotExist:
+            return Response(
+                {'errors': 'Рецепт не существует'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        obj = model.objects.filter(user=user, recipe=recipe)
         if obj.exists():
             obj.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        return Response(
-            {'errors': f'Рецепт не добавлен в {model.__name__}'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def _get_recipe_or_400(self, pk):
-        try:
-            return Recipe.objects.get(pk=pk)
-        except ObjectDoesNotExist:
-            raise ValidationError(
-                {'error': 'Рецепт не найден'},
-                code=status.HTTP_400_BAD_REQUEST
+        else:
+            return Response(
+                {'errors': f'Рецепт не добавлен в {model.__name__}'},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
     @action(methods=['POST', 'DELETE'],
@@ -154,8 +162,6 @@ class RecipeViewSet(ModelViewSet):
             permission_classes=(IsAuthenticated,)
             )
     def favorite(self, request, pk=None):
-        self._get_recipe_or_400(pk)
-
         if request.method == 'POST':
             return self.post_list(Favorite, request.user, pk)
         return self.delete_list(Favorite, request.user, pk)
@@ -165,8 +171,6 @@ class RecipeViewSet(ModelViewSet):
             permission_classes=(IsAuthenticated,)
             )
     def shopping_cart(self, request, pk=None):
-        self._get_recipe_or_400(pk)
-
         if request.method == 'POST':
             return self.post_list(ShoppingCart, request.user, pk)
         return self.delete_list(ShoppingCart, request.user, pk)
@@ -218,42 +222,3 @@ class RecipeViewSet(ModelViewSet):
             response = Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return response
-
-
-def convert_pdf(data, title, font, font_size):
-    """Конвертирует данные в pdf-файл при помощи ReportLab."""
-
-    buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
-
-    # Устанавливаем заголовок PDF-файла
-    p.setTitle(title)
-
-    # Регистрация шрифта
-    pdfmetrics.registerFont(TTFont(font, f'./fonts/{font}.ttf'))
-
-    # Заголовок
-    p.setFont(font, font_size)
-    height = 800
-    p.drawString(50, height, f'{title}:')
-    height -= 30
-
-    # Тело
-    p.setFont(font, font_size)
-    for i, (name, info) in enumerate(data.items(), 1):
-        p.drawString(75, height, (f'{i}. {name} - {info["amount"]} '
-                                  f'{info["measurement_unit"]}'))
-        height -= 30
-
-    # Подпись
-    current_year = timezone.now().year
-    signature = f'Спасибо, что используете Foodgram Project © {current_year}'
-    p.line(50, height, 550, height)
-    height -= 10
-    p.setFont(font, font_size - 4)
-    p.drawString(50, height, signature)
-    p.showPage()
-    p.save()
-    buffer.seek(0)
-
-    return buffer

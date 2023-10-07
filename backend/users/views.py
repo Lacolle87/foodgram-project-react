@@ -11,7 +11,7 @@ from users.models import Subscription
 from users.serializers import (
     SubscribeSerializer,
     UserCustomSerializer,
-    UserCustomCreateSerializer,
+    CustomUserCreateRegexSerializer,
 )
 
 User = get_user_model()
@@ -32,7 +32,7 @@ class CustomUserViewSet(UserViewSet):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        serializer = UserCustomCreateSerializer(data=request.data)
+        serializer = CustomUserCreateRegexSerializer(data=request.data)
 
         if serializer.is_valid():
             user = serializer.save()
@@ -85,25 +85,18 @@ class CustomUserViewSet(UserViewSet):
                 return Response(
                     serializer.data, status=status.HTTP_201_CREATED
                 )
-            if not Subscription.objects.filter(
+            else:
+                subscription = Subscription.objects.filter(
                     user=user,
                     author=author
-            ).exists():
-                if not User.objects.filter(id=id).exists():
+                ).first()
+                if not subscription:
                     return Response(
-                        {'errors': 'Пользователь не существует.'},
-                        status=status.HTTP_400_BAD_REQUEST)
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                subscription.delete()
                 return Response(
-                    {'errors': 'Вы не подписаны, либо отписались.'},
-                    status=status.HTTP_400_BAD_REQUEST)
-            subscription = get_object_or_404(
-                Subscription,
-                user=user,
-                author=author)
-            subscription.delete()
-            return Response(
-                'Вы отписались',
-                status=status.HTTP_204_NO_CONTENT
-            )
+                    status=status.HTTP_204_NO_CONTENT
+                )
         else:
             return Response(status=status.HTTP_401_UNAUTHORIZED)

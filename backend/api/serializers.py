@@ -26,7 +26,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class IngredientRecipeSerializer(serializers.ModelSerializer):
+class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
@@ -77,7 +77,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     author = UserCustomSerializer()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    ingredients = IngredientRecipeSerializer(
+    ingredients = RecipeIngredientSerializer(
         many=True,
         required=True,
         source='recipe_ingredients'
