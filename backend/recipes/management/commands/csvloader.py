@@ -12,9 +12,13 @@ class Command(BaseCommand):
         csv_dir = settings.CSV_FILES_DIR
         csv_files = [f for f in os.listdir(csv_dir) if f.endswith('.csv')]
 
-        ingredients_to_create = []
-        tags_to_create = []
+        ingredients_to_create = self.parse_ingredients(csv_dir, csv_files)
+        tags_to_create = self.parse_tags(csv_dir, csv_files)
 
+        self.import_data(ingredients_to_create, tags_to_create)
+
+    def parse_ingredients(self, csv_dir, csv_files):
+        ingredients_to_create = []
         for csv_file_name in csv_files:
             csv_file_path = os.path.join(csv_dir, csv_file_name)
             with open(csv_file_path, 'r', encoding='utf-8') as csv_file:
@@ -27,12 +31,24 @@ class Command(BaseCommand):
                             name=name,
                             measurement_unit=measurement_unit)
                         ingredients_to_create.append(ingredient)
-                    elif 'name' in row and 'color' in row and 'slug' in row:
+        return ingredients_to_create
+
+    def parse_tags(self, csv_dir, csv_files):
+        tags_to_create = []
+        for csv_file_name in csv_files:
+            csv_file_path = os.path.join(csv_dir, csv_file_name)
+            with open(csv_file_path, 'r', encoding='utf-8') as csv_file:
+                csv_reader = csv.DictReader(csv_file)
+                for row in csv_reader:
+                    if 'name' in row and 'color' in row and 'slug' in row:
                         name = row['name']
                         color = row['color']
                         slug = row['slug']
                         tag = Tag(name=name, color=color, slug=slug)
                         tags_to_create.append(tag)
+        return tags_to_create
+
+    def import_data(self, ingredients_to_create, tags_to_create):
         try:
             if ingredients_to_create:
                 Ingredient.objects.bulk_create(ingredients_to_create)
