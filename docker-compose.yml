@@ -39,7 +39,7 @@ services:
   nginx:
     image: lacolle87/foodgram_gateway:latest
     ports:
-      - "80:80"
+      - "8000:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
