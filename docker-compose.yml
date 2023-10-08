@@ -19,9 +19,7 @@ services:
       retries: 5
 
   backend:
-    build:
-      context: backend
-      dockerfile: backend/Dockerfile
+    image: lacolle87/foodgram_backend:latest
     env_file: .env
     volumes:
       - static:/app/static/
@@ -32,18 +30,14 @@ services:
         condition: service_healthy
 
   frontend:
-    build:
-      context: frontend
-      dockerfile: frontend/Dockerfile
+    image: lacolle87/foodgram_frontend:latest
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
       - backend
 
   nginx:
-    build:
-      context: infra
-      dockerfile: infra/Dockerfile
+    image: lacolle87/foodgram_gateway:latest
     ports:
       - "80:80"
     volumes:
