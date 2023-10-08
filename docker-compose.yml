@@ -9,7 +9,7 @@ volumes:
 services:
   db:
     image: postgres:13.0-alpine
-    env_file: .env
+    env_file: infra/.env
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -20,9 +20,9 @@ services:
 
   backend:
     build:
-      context: ../backend
-      dockerfile: ../backend/Dockerfile
-    env_file: .env
+      context: backend
+      dockerfile: backend/Dockerfile
+    env_file: infra/.env
     volumes:
       - static:/app/static/
       - media:/app/media/
@@ -33,8 +33,8 @@ services:
 
   frontend:
     build:
-      context: ../frontend
-      dockerfile: Dockerfile
+      context: frontend
+      dockerfile: frontend/Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
@@ -42,8 +42,8 @@ services:
 
   nginx:
     build:
-      context: ../infra
-      dockerfile: ../infra/Dockerfile
+      context: infra
+      dockerfile: infra/Dockerfile
     ports:
       - "80:80"
     volumes:
