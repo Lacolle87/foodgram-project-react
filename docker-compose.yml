@@ -41,7 +41,7 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - .infra/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ../infra/nginx.conf:/etc/nginx/conf.d/default.conf
       - ../frontend/build:/usr/share/nginx/html/
       - ../docs/:/usr/share/nginx/html/api/docs/
       - static:/var/html/static/
