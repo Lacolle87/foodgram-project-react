@@ -9,6 +9,7 @@ volumes:
 services:
   db:
     image: postgres:13.0-alpine
+    restart: always
     env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
@@ -20,6 +21,7 @@ services:
 
   backend:
     image: lacolle87/foodgram_backend:latest
+    restart: always
     env_file: .env
     volumes:
       - static:/app/static/
@@ -31,6 +33,7 @@ services:
 
   frontend:
     image: lacolle87/foodgram_frontend:latest
+    restart: always
     volumes:
       - ../frontend/:/app/result_build/
     depends_on:
@@ -38,6 +41,7 @@ services:
 
   nginx:
     image: nginx:1.22.1-alpine
+    restart: always
     ports:
       - "8000:80"
     volumes:
