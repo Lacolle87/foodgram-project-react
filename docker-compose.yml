@@ -10,7 +10,7 @@ services:
   db:
     image: postgres:13.0-alpine
     restart: always
-    env_file: infra/.env
+    env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
   backend:
     image: lacolle87/foodgram_backend:latest
     restart: always
-    env_file: infra/.env
+    env_file: .env
     volumes:
       - static:/app/static/
       - media:/app/media/
