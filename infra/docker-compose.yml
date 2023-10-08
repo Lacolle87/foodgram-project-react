@@ -41,7 +41,9 @@ services:
       - backend
 
   nginx:
-    image: nginx:1.25.2-alpine
+    build:
+      context: ../infra
+      dockerfile: ../infra/Dockerfile
     ports:
       - "80:80"
     volumes:

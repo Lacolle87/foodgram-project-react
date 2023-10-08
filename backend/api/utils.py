@@ -6,6 +6,7 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+
 def convert_pdf(data, title, font, font_size):
     """Конвертирует данные в pdf-файл при помощи ReportLab."""
 

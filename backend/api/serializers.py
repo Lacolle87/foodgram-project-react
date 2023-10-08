@@ -209,8 +209,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def is_valid(self, raise_exception=False):
         if (
-                'tags' not in self.initial_data or
-                'ingredients' not in self.initial_data
+                'tags' not in self.initial_data or 'ingredients' not in
+                self.initial_data
         ):
             raise serializers.ValidationError(
                 {'tags': ['Это поле обязательно.'],
