@@ -9,7 +9,7 @@ volumes:
 services:
   db:
     image: postgres:13.0-alpine
-    env_file: infra/.env
+    env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
     build:
       context: backend
       dockerfile: backend/Dockerfile
-    env_file: infra/.env
+    env_file: .env
     volumes:
       - static:/app/static/
       - media:/app/media/
