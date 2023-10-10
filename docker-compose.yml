@@ -28,7 +28,7 @@ services:
       - static:/app/static/
       - media:/app/media/
       - logs:/app/logs/
-      - docs:/app/docs/
+      - docs:/docs/
     depends_on:
       db:
         condition: service_healthy

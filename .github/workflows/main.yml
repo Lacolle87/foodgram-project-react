@@ -90,6 +90,16 @@ jobs:
         source: "docker-compose.yml"
         target: "foodgram"
 
+    - name: Copy nginx.conf via ssh
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        source: "nginx.conf"
+        target: "foodgram"
+
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
       with:
