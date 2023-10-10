@@ -38,7 +38,7 @@ services:
     image: lacolle87/foodgram_frontend:latest
     restart: always
     volumes:
-      - ../frontend/:/app/result_build/
+      - static:/app/result_build/build
     depends_on:
       - backend
 
