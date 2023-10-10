@@ -105,7 +105,7 @@ jobs:
           sudo docker compose -f docker-compose.yml exec backend python manage.py migrate
           sudo docker compose -f docker-compose.yml exec backend python manage.py collectstatic
           sudo docker compose -f docker-compose.yml exec backend python manage.py csvloader
-          sudo docker compose exec backend cp -r docs /static/api/
+          sudo docker compose -f docker-compose.yml exec backend cp -r docs /static/api/
 
   send_message:
     runs-on: ubuntu-latest
