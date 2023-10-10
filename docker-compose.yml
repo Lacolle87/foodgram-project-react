@@ -29,7 +29,7 @@ services:
       - backend_static:/app/static
       - backend_media:/app/media
       - ./logs:/app/logs/
-      - docs:/app/api/docs/
+      - ./docs:/app/api/docs/
     depends_on:
       db:
         condition: service_healthy
