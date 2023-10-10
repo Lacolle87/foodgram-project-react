@@ -26,8 +26,8 @@ services:
     restart: always
     env_file: .env
     volumes:
-      - static:/app/static/
-      - media:/app/media/
+      - backend_static:/app/static
+      - backend_media:/app/media
       - ./logs:/app/logs/
       - ./docs:/docs/
     depends_on:
