@@ -29,7 +29,7 @@ services:
       - backend_static:/app/static
       - backend_media:/app/media
       - ./logs:/app/logs/
-      - ./docs:/docs/
+      - ./docs:/app/api/docs/
     depends_on:
       db:
         condition: service_healthy
@@ -50,8 +50,8 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - static:/usr/share/nginx/html/
-      - backend_static:/backend_static
-      - backend_media:/backend_media
+      - backend_static:/var/html/static/
+      - backend_media:/var/html/media/
       - ../docs/:/usr/share/nginx/html/api/docs/
     depends_on:
       - backend
