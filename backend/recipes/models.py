@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 
@@ -18,7 +18,6 @@ class Tag(BaseModel):
         verbose_name='Тег',
         max_length=200,
         unique=True,
-        blank=False
     )
     color = models.CharField(
         verbose_name='Цвет',
@@ -74,7 +73,7 @@ class Recipe(BaseModel):
         max_length=200
     )
     cooking_time = models.PositiveIntegerField(
-        validators=[MinValueValidator(1), ],
+        validators=[MinValueValidator(1), MaxValueValidator(999)],
         verbose_name='Время приготовления',
         help_text='минут'
     )
@@ -116,19 +115,19 @@ class Recipe(BaseModel):
 class RecipeIngredient(BaseModel):
     recipe = models.ForeignKey(
         Recipe,
-        null=True,
+        verbose_name='Рецепт',
         on_delete=models.CASCADE,
         related_name='recipe_ingredients'
     )
     ingredient = models.ForeignKey(
         Ingredient,
-        null=True,
-        on_delete=models.SET_NULL,
+        verbose_name='Ингредиент',
+        on_delete=models.CASCADE,
         related_name='recipe_ingredients'
     )
     amount = models.PositiveIntegerField(
         verbose_name='Количество',
-        validators=[MinValueValidator(1), ],
+        validators=[MinValueValidator(1), MaxValueValidator(999)],
         blank=False,
         null=False,
     )

@@ -11,36 +11,37 @@ def convert_pdf(data, title, font, font_size):
     """Конвертирует данные в pdf-файл при помощи ReportLab."""
 
     buffer = io.BytesIO()
-    p = canvas.Canvas(buffer, pagesize=A4)
+    pdf_canvas = canvas.Canvas(buffer, pagesize=A4)
 
     # Устанавливаем заголовок PDF-файла
-    p.setTitle(title)
+    pdf_canvas.setTitle(title)
 
     # Регистрация шрифта
     pdfmetrics.registerFont(TTFont(font, f'./fonts/{font}.ttf'))
 
     # Заголовок
-    p.setFont(font, font_size)
+    pdf_canvas.setFont(font, font_size)
     height = 800
-    p.drawString(50, height, f'{title}:')
+    pdf_canvas.drawString(50, height, f'{title}:')
     height -= 30
 
     # Тело
-    p.setFont(font, font_size)
-    for i, (name, info) in enumerate(data.items(), 1):
-        p.drawString(75, height, (f'{i}. {name} - {info["amount"]} '
-                                  f'{info["measurement_unit"]}'))
+    pdf_canvas.setFont(font, font_size)
+    for index, (name, info) in enumerate(data.items(), 1):
+        pdf_canvas.drawString(75, height,
+                              (f'{index}. {name} - {info["amount"]} '
+                               f'{info["measurement_unit"]}'))
         height -= 30
 
     # Подпись
     current_year = timezone.now().year
     signature = f'Спасибо, что используете Foodgram Project © {current_year}'
-    p.line(50, height, 550, height)
+    pdf_canvas.line(50, height, 550, height)
     height -= 10
-    p.setFont(font, font_size - 4)
-    p.drawString(50, height, signature)
-    p.showPage()
-    p.save()
+    pdf_canvas.setFont(font, font_size - 4)
+    pdf_canvas.drawString(50, height, signature)
+    pdf_canvas.showPage()
+    pdf_canvas.save()
     buffer.seek(0)
 
     return buffer

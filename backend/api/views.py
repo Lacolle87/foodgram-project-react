@@ -5,7 +5,6 @@ from django.http import FileResponse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly
@@ -47,29 +46,7 @@ class IngredientViewSet(ModelViewSet):
     permission_classes = [IsAuthorOrReadOnly]
     filter_backends = (IngredientFilter,)
     search_fields = ('^name',)
-
-    def create(self, request, *args, **kwargs):
-        raise MethodNotAllowed('POST')
-
-    def update(self, request, *args, **kwargs):
-        raise MethodNotAllowed('PUT')
-
-    def partial_update(self, request, *args, **kwargs):
-        raise MethodNotAllowed('PATCH')
-
-    def destroy(self, request, *args, **kwargs):
-        raise MethodNotAllowed('DELETE')
-
-    def finalize_response(self, request, response, *args, **kwargs):
-        if (
-                response.status_code != status.HTTP_405_METHOD_NOT_ALLOWED
-                and request.method not in ['GET']
-        ):
-            response = Response(
-                {'detail': 'Method Not Allowed.'},
-                status=status.HTTP_405_METHOD_NOT_ALLOWED,
-            )
-        return super().finalize_response(request, response, *args, **kwargs)
+    http_method_names = ['get']
 
 
 class RecipeViewSet(ModelViewSet):
@@ -178,12 +155,6 @@ class RecipeViewSet(ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def download_shopping_cart(self, request):
-        """
-        Прикол конечно у вас тут с названием файла, часа 3 сидел не мог понять
-        почему Content-Disposition не задает имя, хотя все уходит и приходит.
-        Оказывается на фронте название файла захардкожено. Я поменял в react,
-        теперь название файла задается.
-        """
         ingredient_list = {}
         recipe_ingredients = RecipeIngredient.objects.filter(
             recipe__cart__user=request.user

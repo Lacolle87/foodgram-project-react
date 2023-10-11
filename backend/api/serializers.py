@@ -1,4 +1,5 @@
 from drf_base64.fields import Base64ImageField
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError, PermissionDenied
 
@@ -39,8 +40,6 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())
 
     class Meta:
         model = Favorite
@@ -63,13 +62,6 @@ class IngredientEditSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'amount')
-
-    def validate_amount(self, value):
-        if value < 1:
-            raise serializers.ValidationError(
-                'Количество ингредиента должно быть больше 1.'
-            )
-        return value
 
 
 class RecipeSerializer(serializers.ModelSerializer):
@@ -162,11 +154,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
         return ingredients
 
-    def validate_cooking_time(self, cooking_time):
-        if int(cooking_time) < 1:
-            raise ValidationError('Время приготовления должно быть больше 1.')
-        return cooking_time
-
     def validate_tags(self, tags):
         if not tags:
             raise ValidationError('Необходим хотя бы 1 тег.')
@@ -177,6 +164,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
         return tags
 
+    @transaction.atomic
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
@@ -191,6 +179,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         self.add_ingredients(new_recipe, ingredients)
         return new_recipe
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         if self.context['request'].user != instance.author:
             raise PermissionDenied(
