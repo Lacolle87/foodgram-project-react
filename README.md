@@ -33,10 +33,6 @@ docker-compose up
 - nginx
 - PostgreSQL
 
-## DEMO
-
-[https://f00dgram.ddnsking.com](https://f00dgram.ddnsking.com) 
-
 ## Лицензия
 
 Проект выпущен под лицензией MIT.
